@@ -1,5 +1,5 @@
 Anna Gogoula
-OS project1 2021 (grade 85/100)
+OS project1 2021
 —----------------------------------------------------------------------
 gcc -g -Wall producer_parent.c -o producer_parent -lpthread
 gcc -g -Wall consumer_child.c -o consumer_child  -lpthread
