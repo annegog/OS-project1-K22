@@ -5,6 +5,46 @@ gcc -g -Wall producer_parent.c -o producer_parent -lpthread
 gcc -g -Wall consumer_child.c -o consumer_child  -lpthread
 ./producer_parent
 
+PRODUCER (producer_parent.c):
+------
+- Initially, we create and initialize 3 semaphores that will be needed later. The first semaphore is initialized to 1, and the other 2 to 0, allowing us 
+to block both the child and the parent processes (this will be needed later).
+- We perform some checks on the semaphores, initialize the arguments we receive, and determine the number of lines in the file we want to use.
+- Next, we create shared memory, perform some checks, and pass necessary values to the shared memory, including the lines of the file, the number of children
+created by the parent, the number of requests each child should make, and a counter to keep track of how many children have finished their requests.
+- We use the semaphore to create the children without interference, and then the critical section begins. Until the "running" variable is not equal to 0, 
+there is a condition that indicates all child requests have been completed, so we do not want to find another line. In this section, the parent receives the 
+child's request for a specific line from the file, searches for that line in the file, and stores it in "some_text" in shared memory (so the child can access it). 
+The process of handling child requests is described in more detail below with the children's processes.
+- Subsequently, the parent waits for the children to finish their requests, performs checks, closes the semaphores, and unlinks them.
+
+CONSUMERS (consumer_child.c):
+------
+- We open the names of the semaphores to ensure shared semaphores exist. Necessary checks are performed to confirm that the semaphores have been opened.
+- We declare the shared memory and enter the critical section.
+- For each request (up to N), a random number within the range of the number of lines in the file is selected. The timer starts counting, 
+and when the line is returned by the parent, it is printed. The timer stops, and the time taken for each request is added to a variable. 
+This allows the calculation of the average time taken by each child upon completion.
+- The counter keeping track of children is incremented, and a check is performed to determine if the current child is the last one. 
+Finally, checks are made regarding shared memory, and the semaphores are closed.
+
+Description of the Critical Section:
+------
+-The parent enters the while loop, and the child process is blocked (the semaphore 3 is waited) to allow the child to execute and make its request.
+- The child process decrements semaphore 3 to ensure that multiple requests do not interfere with each other. The child selects a random line number, starts the timer, 
+and decrements semaphore 1 to allow the parent to search for the requested line. It also decrements semaphore 2 to allow the parent to find and return the line.
+- The parent searches for the line, stores it, and increments semaphore 2. The child prints the requested line from the shared memory, stops the timer, 
+and increments semaphore 1, unblocking the child and allowing more requests. The time difference for each child request is recorded.
+- This continues until all children have finished their requests.
+- Once the last child finishes, the parent unblocks (increments semaphore 3), setting "running" to 0, and the while loop stops.
+
+Note: 
+The code does not include a Makefile, and it may not run correctly in many cases because sometimes the child count variable is zeroed out,
+indicating that not all children have finished.
+- This issue may be related to some children exiting with a time of -nan.
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
 PRODUCER (producer_parent.c): 
     Αρχικά δημιουργούμε και αρχικοποιούμε 3 σημαφόρους, που θα χρειαστουν στην συνέχεια. Ο πρώτος σημαφόρος αρχικοποιήται στο 1 
 και οι 2 άλλοι στο 0 ώστε να μπορούμε να μπλοκάρουμε το παιδί και τον πατέρα (θα χρειαστεί στην συνέχεια). Γίνονται κάποιοι 
